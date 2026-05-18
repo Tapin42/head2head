@@ -35,3 +35,7 @@ Set `SECRET_KEY` in Fly secrets for production sessions.
 3. Search by name or bib to add competitors.
 4. Drag rows to change the baseline athlete.
 5. Share the URL — `pids` order determines row order (`pids[0]` = baseline).
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
