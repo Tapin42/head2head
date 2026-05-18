@@ -63,10 +63,12 @@ button {
 
 .error { color: var(--positive); }
 
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .compare-grid {
-  width: 100%;
-  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -75,19 +77,77 @@ button {
 
 .compare-grid th, .compare-grid td {
   border-bottom: 1px solid var(--border);
-  padding: 0.65rem 0.75rem;
-  vertical-align: top;
-  text-align: left;
+  border-right: 1px solid var(--border);
+  padding: 0.55rem 0.65rem;
+  vertical-align: middle;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.compare-grid th:last-child,
+.compare-grid td:last-child {
+  border-right: none;
+}
+
+.compare-grid tbody tr:last-child th,
+.compare-grid tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .compare-grid thead th {
   position: sticky;
   top: 0;
   background: #eef2ff;
-  z-index: 1;
+  z-index: 2;
 }
 
-.athlete-col { min-width: 180px; }
+.compare-grid thead .metric-header th {
+  top: 2.35rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding-top: 0.25rem;
+  padding-bottom: 0.45rem;
+}
+
+.compare-grid thead .segment-header th {
+  padding-bottom: 0.25rem;
+  text-align: center;
+  border-bottom: none;
+}
+
+.athlete-col {
+  min-width: 9.5rem;
+  width: 9.5rem;
+  text-align: left;
+  white-space: normal;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--card);
+  box-shadow: 1px 0 0 var(--border);
+}
+
+.athlete-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.athlete-primary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.compare-grid thead .athlete-col {
+  z-index: 4;
+  background: #eef2ff;
+}
+
 .drag-handle {
   cursor: grab;
   color: var(--muted);
@@ -95,12 +155,18 @@ button {
   user-select: none;
 }
 
-.athlete-name { font-weight: 600; }
+.athlete-name {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .bib, .baseline-badge {
-  display: inline-block;
-  margin-left: 0.35rem;
   font-size: 0.75rem;
   color: var(--muted);
+  flex-shrink: 0;
 }
 
 .baseline-badge {
@@ -109,15 +175,29 @@ button {
   padding: 0.1rem 0.45rem;
 }
 
-.split-cell .clock { font-weight: 700; font-variant-numeric: tabular-nums; }
-.split-cell .leg, .split-cell .delta {
-  font-size: 0.78rem;
+.value-cell .value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.value-cell[data-kind="leg"] .value {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.value-cell .delta {
+  font-size: 0.72rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  margin-top: 0.1rem;
 }
 
 .delta[data-sign="positive"] { color: var(--positive); }
 .delta[data-sign="negative"] { color: var(--negative); }
+
+.metric-col-leg {
+  font-style: italic;
+}
 
 .search-results {
   margin-top: 0.5rem;
@@ -142,4 +222,19 @@ tr.dragging { opacity: 0.5; }
 
 @media (max-width: 720px) {
   .page-header { flex-direction: column; }
+
+  .compare-grid th, .compare-grid td {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.88rem;
+  }
+
+  .compare-grid thead .metric-header th {
+    top: 2.1rem;
+    font-size: 0.68rem;
+  }
+
+  .athlete-col {
+    min-width: 8.5rem;
+    width: 8.5rem;
+  }
 }

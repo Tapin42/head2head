@@ -34,3 +34,35 @@ def test_grid_includes_race_title():
     race = Race(event_key="EVENT", display_name="Venice 70.3")
     grid = build_grid_view(race, [], {})
     assert grid["race_title"] == "Venice 70.3"
+
+
+def test_grid_drops_start_and_expands_display_columns():
+    race = Race(event_key="EVENT", display_name="Test Race")
+    athletes = [
+        AthleteRef(profile_id="A", entry_id="1", name="Seed"),
+        AthleteRef(profile_id="B", entry_id="2", name="Other"),
+    ]
+    splits = {
+        "A": [
+            _split("START", "Start", 0, 0),
+            _split("SWIM", "Swim", 1200, 1200),
+            _split("FINISH", "Finish", 3600, 2400),
+        ],
+        "B": [
+            _split("START", "Start", 0, 0),
+            _split("SWIM", "Swim", 1500, 1500),
+            _split("FINISH", "Finish", 3900, 2400),
+        ],
+    }
+    grid = build_grid_view(race, athletes, splits, baseline_index=0)
+
+    assert [group["label"] for group in grid["column_groups"]] == ["Swim", "Finish"]
+    assert grid["column_groups"][1]["leg_label"] == "Run"
+    assert len(grid["rows"][0]["display_cells"]) == 4
+
+    swim_clock = grid["rows"][1]["display_cells"][0]
+    swim_leg = grid["rows"][1]["display_cells"][1]
+    assert swim_clock["kind"] == "clock"
+    assert swim_clock["delta"] == "+5:00"
+    assert swim_leg["kind"] == "leg"
+    assert swim_leg["delta"] == "+5:00"

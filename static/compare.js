@@ -10,6 +10,7 @@
   const searchInput = document.getElementById("search");
   const searchResults = document.getElementById("search-results");
   const addForm = document.getElementById("add-athlete-form");
+  const columnGroups = config.columnGroups || [];
 
   function formatDelta(seconds) {
     if (seconds == null) return "—";
@@ -27,6 +28,27 @@
     if (text.startsWith("+")) return "positive";
     if (text.startsWith("-")) return "negative";
     return "";
+  }
+
+  function expandDisplayCells(cells, isBaseline) {
+    const displayCells = [];
+    cells.forEach((cell) => {
+      displayCells.push({
+        kind: "clock",
+        value: cell.clock_time,
+        seconds: cell.clock_seconds,
+        delta: isBaseline ? null : cell.clock_delta,
+        delta_seconds: isBaseline ? null : cell.clock_delta_seconds,
+      });
+      displayCells.push({
+        kind: "leg",
+        value: cell.leg_time,
+        seconds: cell.leg_seconds,
+        delta: isBaseline ? null : cell.leg_delta,
+        delta_seconds: isBaseline ? null : cell.leg_delta_seconds,
+      });
+    });
+    return displayCells;
   }
 
   function recomputeDeltas() {
@@ -64,35 +86,37 @@
     });
   }
 
+  function renderValueCell(cell) {
+    const deltaHtml = cell.delta
+      ? `<div class="delta" data-sign="${deltaSign(cell.delta)}">${cell.delta}</div>`
+      : "";
+    return `
+      <td class="value-cell" data-kind="${cell.kind}">
+        <div class="value">${cell.value || "—"}</div>
+        ${deltaHtml}
+      </td>`;
+  }
+
   function renderRows() {
     recomputeDeltas();
     body.innerHTML = rows
-      .map(
-        (row) => `
+      .map((row) => {
+        const displayCells = expandDisplayCells(row.cells, row.isBaseline);
+        return `
       <tr data-profile-id="${row.athlete.profile_id}" data-entry-id="${row.athlete.entry_id}" draggable="true">
         <th scope="row" class="athlete-col">
-          <span class="drag-handle" aria-hidden="true">⋮⋮</span>
-          <span class="athlete-name">${row.athlete.name}</span>
-          ${row.athlete.bib ? `<span class="bib">#${row.athlete.bib}</span>` : ""}
-          ${row.isBaseline ? `<span class="baseline-badge">Baseline</span>` : ""}
+          <div class="athlete-cell">
+            <div class="athlete-primary">
+              <span class="drag-handle" aria-hidden="true">⋮⋮</span>
+              <span class="athlete-name">${row.athlete.name}</span>
+              ${row.athlete.bib ? `<span class="bib">#${row.athlete.bib}</span>` : ""}
+            </div>
+            ${row.isBaseline ? `<span class="baseline-badge">Baseline</span>` : ""}
+          </div>
         </th>
-        ${row.cells
-          .map(
-            (cell) => `
-          <td class="split-cell">
-            <div class="clock">${cell.clock_time || "—"}</div>
-            ${cell.leg_time ? `<div class="leg">${cell.leg_time}</div>` : ""}
-            ${
-              !row.isBaseline
-                ? `<div class="delta clock-delta" data-sign="${deltaSign(cell.clock_delta)}">${cell.clock_delta || "—"}</div>
-                   <div class="delta leg-delta" data-sign="${deltaSign(cell.leg_delta)}">${cell.leg_delta || "—"}</div>`
-                : ""
-            }
-          </td>`
-          )
-          .join("")}
-      </tr>`
-      )
+        ${displayCells.map(renderValueCell).join("")}
+      </tr>`;
+      })
       .join("");
     bindDragAndDrop();
     syncUrl();
@@ -137,25 +161,36 @@
     return response.json();
   }
 
+  function isStartSegment(segmentId, label) {
+    if ((segmentId || "").toUpperCase() === "START") return true;
+    return (label || "").trim().toLowerCase() === "start";
+  }
+
   function alignToColumns(splits) {
     const byId = Object.fromEntries(splits.map((split) => [split.segment_id, split]));
-    return (config.columns || []).map((segmentId) => {
-      const split = byId[segmentId];
-      if (!split) {
+    return (config.columns || [])
+      .map((segmentId, index) => {
+        const label = (config.columnLabels || [])[index] || "";
+        return { segmentId, label };
+      })
+      .filter(({ segmentId, label }) => !isStartSegment(segmentId, label))
+      .map(({ segmentId }) => {
+        const split = byId[segmentId];
+        if (!split) {
+          return {
+            clock_time: null,
+            leg_time: null,
+            clock_seconds: null,
+            leg_seconds: null,
+          };
+        }
         return {
-          clock_time: null,
-          leg_time: null,
-          clock_seconds: null,
-          leg_seconds: null,
+          clock_time: split.clock_time,
+          leg_time: split.leg_time,
+          clock_seconds: split.clock_seconds,
+          leg_seconds: split.leg_seconds,
         };
-      }
-      return {
-        clock_time: split.clock_time,
-        leg_time: split.leg_time,
-        clock_seconds: split.clock_seconds,
-        leg_seconds: split.leg_seconds,
-      };
-    });
+      });
   }
 
   async function addAthlete(profileId) {
