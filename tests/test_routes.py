@@ -8,7 +8,7 @@ class FakeProvider:
         return AthleteRef(profile_id=profile_id, entry_id="e1", name="Seed Athlete", bib="101")
 
     def fetch_conf(self, event_key):
-        return {"conf": {"name": "Test Event"}}
+        return {"vconf": {"desc": "Test Event"}}
 
     def fetch_splits(self, race, profile_id, **kwargs):
         return [

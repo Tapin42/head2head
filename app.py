@@ -9,6 +9,7 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 from racedata.core.models import AthleteRef, Race
 from racedata.providers.rtrt.client import RtrtClient, SessionCredentials
 from racedata.providers.rtrt.service import RtrtProvider
+from racedata.providers.rtrt.points import event_display_name_from_conf
 from racedata.providers.rtrt.ulink import credentials_for_ulink, parse_ulink_url, resolve_ulink
 from src.view_models import build_grid_view
 
@@ -117,9 +118,8 @@ def import_ulink():
     display_name = resolution.event_key
     try:
         conf = provider.fetch_conf(resolution.event_key)
-        og_title = conf.get("conf", {}).get("name") if isinstance(conf.get("conf"), dict) else None
-        if og_title:
-            display_name = og_title
+        if title := event_display_name_from_conf(conf):
+            display_name = title
     except Exception:
         pass
 
