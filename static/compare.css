@@ -1,0 +1,145 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #1b1f24;
+  --muted: #5b6470;
+  --accent: #0b5fff;
+  --border: #d8dee9;
+  --positive: #b42318;
+  --negative: #067647;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page, .page-header, .controls, .table-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+h1 { margin: 0.25rem 0; font-size: 1.6rem; }
+.subtitle, .lead, .legend { color: var(--muted); }
+.back-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+
+.import-form, .add-athlete-form, .course-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+input, select, button {
+  font: inherit;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+#import-form input[type=url], #search { flex: 1 1 240px; min-width: 200px; }
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.error { color: var(--positive); }
+
+.table-wrap { overflow-x: auto; }
+.compare-grid {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.compare-grid th, .compare-grid td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.75rem;
+  vertical-align: top;
+  text-align: left;
+}
+
+.compare-grid thead th {
+  position: sticky;
+  top: 0;
+  background: #eef2ff;
+  z-index: 1;
+}
+
+.athlete-col { min-width: 180px; }
+.drag-handle {
+  cursor: grab;
+  color: var(--muted);
+  margin-right: 0.35rem;
+  user-select: none;
+}
+
+.athlete-name { font-weight: 600; }
+.bib, .baseline-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.baseline-badge {
+  background: #eef2ff;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.split-cell .clock { font-weight: 700; font-variant-numeric: tabular-nums; }
+.split-cell .leg, .split-cell .delta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.delta[data-sign="positive"] { color: var(--positive); }
+.delta[data-sign="negative"] { color: var(--negative); }
+
+.search-results {
+  margin-top: 0.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.search-results button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  border: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-results button:last-child { border-bottom: none; }
+
+tr.dragging { opacity: 0.5; }
+
+@media (max-width: 720px) {
+  .page-header { flex-direction: column; }
+}

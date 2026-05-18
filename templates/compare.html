@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ grid.race_title }} — Head2Head</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='compare.css') }}">
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <a href="{{ url_for('index') }}" class="back-link">← New comparison</a>
+      <h1>{{ grid.race_title }}</h1>
+      {% if grid.course_label %}
+      <p class="subtitle">{{ grid.course_label }}</p>
+      {% endif %}
+    </div>
+    {% if grid.available_courses|length > 1 %}
+    <form method="get" action="{{ url_for('compare') }}" class="course-picker" id="course-form">
+      <input type="hidden" name="pids" value="{{ request.args.get('pids', '') }}">
+      <input type="hidden" name="appid" value="{{ app_id }}">
+      <label for="course">Race</label>
+      <select id="course" name="course" onchange="this.form.submit()">
+        {% for course in grid.available_courses %}
+        <option value="{{ course.id }}" {% if course.id == grid.selected_course %}selected{% endif %}>
+          {{ course.label }}
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+  </header>
+
+  <section class="controls">
+    <form id="add-athlete-form" class="add-athlete-form">
+      <label for="search">Add athlete</label>
+      <input id="search" type="search" placeholder="Name or bib" autocomplete="off">
+      <button type="submit">Add</button>
+    </form>
+    <div id="search-results" class="search-results" hidden></div>
+    <p class="legend">Clock time (bold) · leg time · cumulative delta · leg delta. Top row is baseline.</p>
+  </section>
+
+  <div class="table-wrap">
+    <table class="compare-grid" id="compare-grid">
+      <thead>
+        <tr>
+          <th class="athlete-col">Athlete</th>
+          {% for column in grid.columns %}
+          <th>{{ column.label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody id="compare-body">
+        {% for row in grid.rows %}
+        <tr data-profile-id="{{ row.athlete.profile_id }}" data-entry-id="{{ row.athlete.entry_id }}" draggable="true">
+          <th scope="row" class="athlete-col">
+            <span class="drag-handle" aria-hidden="true">⋮⋮</span>
+            <span class="athlete-name">{{ row.athlete.name }}</span>
+            {% if row.athlete.bib %}<span class="bib">#{{ row.athlete.bib }}</span>{% endif %}
+            {% if row.is_baseline %}<span class="baseline-badge">Baseline</span>{% endif %}
+          </th>
+          {% for cell in row.cells %}
+          <td class="split-cell">
+            <div class="clock">{{ cell.clock_time or '—' }}</div>
+            {% if cell.leg_time %}
+            <div class="leg">{{ cell.leg_time }}</div>
+            {% endif %}
+            {% if not row.is_baseline %}
+            <div class="delta clock-delta">{{ cell.clock_delta }}</div>
+            <div class="delta leg-delta">{{ cell.leg_delta }}</div>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    window.HEAD2HEAD = {
+      appId: {{ app_id|tojson }},
+      selectedCourse: {{ grid.selected_course|tojson }},
+      columns: {{ grid.columns|map(attribute='segment_id')|list|tojson }},
+      columnLabels: {{ grid.columns|map(attribute='label')|list|tojson }},
+      initialRows: {{ grid.rows|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='compare.js') }}"></script>
+</body>
+</html>
