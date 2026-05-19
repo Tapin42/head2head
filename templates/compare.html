@@ -44,9 +44,9 @@
     <table class="compare-grid" id="compare-grid">
       <thead>
         <tr class="segment-header">
-          <th class="athlete-col" rowspan="2">Athlete</th>
+          <th class="athlete-col" rowspan="2" scope="col">Athlete</th>
           {% for group in grid.column_groups %}
-          <th colspan="2">{{ group.label }}</th>
+          <th colspan="2" scope="colgroup">{{ group.label }}</th>
           {% endfor %}
         </tr>
         <tr class="metric-header">
