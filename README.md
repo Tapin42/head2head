@@ -1,5 +1,7 @@
 # Head2Head
 
+[![Deploy to Fly.io](https://github.com/Tapin42/head2head/actions/workflows/deploy-fly.yml/badge.svg)](https://github.com/Tapin42/head2head/actions/workflows/deploy-fly.yml)
+
 Compare RTRT.me athlete splits side-by-side from a share link.
 
 ## Local development

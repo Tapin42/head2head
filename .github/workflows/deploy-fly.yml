@@ -1,0 +1,40 @@
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-fly-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout head2head
+        uses: actions/checkout@v4
+
+      - name: Checkout racedata dependency
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.RACEDATA_REPOSITORY || format('{0}/racedata', github.repository_owner) }}
+          token: ${{ secrets.RACEDATA_REPO_TOKEN || github.token }}
+          path: _deps/racedata
+
+      - name: Vendor racedata into build context
+        run: ./scripts/vendor-racedata.sh
+        env:
+          RACEDATA_PATH: ${{ github.workspace }}/_deps/racedata
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy app
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
