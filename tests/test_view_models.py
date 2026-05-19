@@ -66,3 +66,32 @@ def test_grid_drops_start_and_expands_display_columns():
     assert swim_clock["delta"] == "+5:00"
     assert swim_leg["kind"] == "leg"
     assert swim_leg["delta"] == "+5:00"
+
+
+def test_grid_marks_hidden_columns_and_cells():
+    race = Race(event_key="EVENT", display_name="Test Race")
+    athletes = [AthleteRef(profile_id="A", entry_id="1", name="Seed")]
+    splits = {
+        "A": [
+            _split("START", "Start", 0, 0),
+            _split("RUN1FINISH", "Run 1 - Finish", 1200, 1200),
+            _split("RUN1-1", "Run 1.6mi | 2.6km", 1500, 300),
+        ]
+    }
+
+    grid = build_grid_view(
+        race,
+        athletes,
+        splits,
+        hidden_segment_ids={"RUN1-1"},
+    )
+
+    assert grid["has_hidden_columns"] is True
+    assert [column["hidden_by_default"] for column in grid["columns"]] == [False, True]
+    assert [group["hidden_by_default"] for group in grid["column_groups"]] == [False, True]
+    assert [cell["hidden_by_default"] for cell in grid["rows"][0]["display_cells"]] == [
+        False,
+        False,
+        True,
+        True,
+    ]

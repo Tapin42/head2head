@@ -41,18 +41,29 @@ def _filter_start_column(
     return filtered_columns, filtered_rows
 
 
-def _build_column_groups(columns: list[SegmentColumn]) -> list[dict]:
+def _build_column_groups(
+    columns: list[SegmentColumn],
+    *,
+    hidden_segment_ids: set[str],
+) -> list[dict]:
     return [
         {
             "segment_id": column.segment_id,
             "label": column.label,
             "leg_label": _leg_header_label(column.segment_id, column.label),
+            "hidden_by_default": column.segment_id in hidden_segment_ids,
         }
         for column in columns
     ]
 
 
-def _display_cell_from_segment_cell(cell: dict, *, kind: str, is_baseline: bool) -> dict:
+def _display_cell_from_segment_cell(
+    cell: dict,
+    *,
+    kind: str,
+    is_baseline: bool,
+    hidden_by_default: bool,
+) -> dict:
     if kind == "clock":
         return {
             "kind": "clock",
@@ -60,6 +71,7 @@ def _display_cell_from_segment_cell(cell: dict, *, kind: str, is_baseline: bool)
             "seconds": cell["clock_seconds"],
             "delta": None if is_baseline else cell["clock_delta"],
             "delta_seconds": None if is_baseline else cell["clock_delta_seconds"],
+            "hidden_by_default": hidden_by_default,
         }
     return {
         "kind": "leg",
@@ -67,17 +79,35 @@ def _display_cell_from_segment_cell(cell: dict, *, kind: str, is_baseline: bool)
         "seconds": cell["leg_seconds"],
         "delta": None if is_baseline else cell["leg_delta"],
         "delta_seconds": None if is_baseline else cell["leg_delta_seconds"],
+        "hidden_by_default": hidden_by_default,
     }
 
 
-def _expand_display_cells(cells: list[dict], *, is_baseline: bool) -> list[dict]:
+def _expand_display_cells(
+    cells: list[dict],
+    columns: list[SegmentColumn],
+    *,
+    is_baseline: bool,
+    hidden_segment_ids: set[str],
+) -> list[dict]:
     display_cells: list[dict] = []
-    for cell in cells:
+    for column, cell in zip(columns, cells, strict=False):
+        hidden_by_default = column.segment_id in hidden_segment_ids
         display_cells.append(
-            _display_cell_from_segment_cell(cell, kind="clock", is_baseline=is_baseline)
+            _display_cell_from_segment_cell(
+                cell,
+                kind="clock",
+                is_baseline=is_baseline,
+                hidden_by_default=hidden_by_default,
+            )
         )
         display_cells.append(
-            _display_cell_from_segment_cell(cell, kind="leg", is_baseline=is_baseline)
+            _display_cell_from_segment_cell(
+                cell,
+                kind="leg",
+                is_baseline=is_baseline,
+                hidden_by_default=hidden_by_default,
+            )
         )
     return display_cells
 
@@ -91,6 +121,7 @@ def build_grid_view(
     course_label: str | None = None,
     available_courses: list[dict] | None = None,
     selected_course: str | None = None,
+    hidden_segment_ids: set[str] | None = None,
 ) -> dict:
     columns, rows = build_comparison_rows(
         athletes,
@@ -98,12 +129,15 @@ def build_grid_view(
         baseline_index=baseline_index,
     )
     columns, rows = _filter_start_column(columns, rows)
-    column_groups = _build_column_groups(columns)
+    hidden_segment_ids = hidden_segment_ids or set()
+    column_groups = _build_column_groups(columns, hidden_segment_ids=hidden_segment_ids)
     row_dicts = [_row_to_dict(row) for row in rows]
     for row_dict in row_dicts:
         row_dict["display_cells"] = _expand_display_cells(
             row_dict["cells"],
+            columns,
             is_baseline=row_dict["is_baseline"],
+            hidden_segment_ids=hidden_segment_ids,
         )
     return {
         "race": race,
@@ -111,8 +145,16 @@ def build_grid_view(
         "course_label": course_label,
         "available_courses": available_courses or [],
         "selected_course": selected_course,
-        "columns": [{"segment_id": c.segment_id, "label": c.label} for c in columns],
+        "columns": [
+            {
+                "segment_id": c.segment_id,
+                "label": c.label,
+                "hidden_by_default": c.segment_id in hidden_segment_ids,
+            }
+            for c in columns
+        ],
         "column_groups": column_groups,
+        "has_hidden_columns": any(c["hidden_by_default"] for c in column_groups),
         "rows": row_dicts,
         "baseline_index": baseline_index,
     }

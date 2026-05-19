@@ -8,7 +8,9 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 
 from racedata.core.models import AthleteRef, Race
 from racedata.providers.rtrt.client import RtrtClient, SessionCredentials
+from racedata.core.split_filter import main_point_names_from_conf
 from racedata.providers.rtrt.service import RtrtProvider
+from racedata.providers.rtrt.points import pointorder_for_course
 from racedata.providers.rtrt.points import event_display_name_from_conf
 from racedata.providers.rtrt.ulink import credentials_for_ulink, parse_ulink_url, resolve_ulink
 from src.view_models import build_grid_view
@@ -167,8 +169,20 @@ def compare():
             athlete.profile_id,
             entry_id=athlete.entry_id,
             course_id=selected_course,
+            collapse_intermediates=False,
         )
         for athlete in athletes
+    }
+    conf = provider.fetch_conf(race.event_key)
+    main_segment_ids = main_point_names_from_conf(
+        pointorder_for_course(conf, selected_course),
+        course_id=selected_course,
+    )
+    hidden_segment_ids = {
+        split.segment_id
+        for splits in splits_by_profile.values()
+        for split in splits
+        if split.segment_id not in main_segment_ids
     }
 
     grid = build_grid_view(
@@ -179,6 +193,7 @@ def compare():
         course_label=course_label,
         available_courses=course_options,
         selected_course=selected_course,
+        hidden_segment_ids=hidden_segment_ids,
     )
     return render_template("compare.html", grid=grid, app_id=app_id)
 
@@ -230,6 +245,7 @@ def api_athlete():
         pid,
         entry_id=athlete.entry_id,
         course_id=course,
+        collapse_intermediates=False,
     )
     return jsonify(
         {

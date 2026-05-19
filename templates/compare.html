@@ -37,6 +37,12 @@
       <input id="search" type="search" placeholder="Name or bib" autocomplete="off">
       <button type="submit">Add</button>
     </form>
+    {% if grid.has_hidden_columns %}
+    <label class="hidden-splits-toggle" for="toggle-hidden-splits">
+      <input id="toggle-hidden-splits" type="checkbox">
+      Show intermediate splits
+    </label>
+    {% endif %}
     <div id="search-results" class="search-results" hidden></div>
   </section>
 
@@ -46,13 +52,13 @@
         <tr class="segment-header">
           <th class="athlete-col" rowspan="2" scope="col">Athlete</th>
           {% for group in grid.column_groups %}
-          <th colspan="2" scope="colgroup">{{ group.label }}</th>
+          <th colspan="2" scope="colgroup" data-hidden-by-default="{{ 'true' if group.hidden_by_default else 'false' }}">{{ group.label }}</th>
           {% endfor %}
         </tr>
         <tr class="metric-header">
           {% for group in grid.column_groups %}
-          <th class="metric-col">Time</th>
-          <th class="metric-col metric-col-leg">{{ group.leg_label }}</th>
+          <th class="metric-col" data-hidden-by-default="{{ 'true' if group.hidden_by_default else 'false' }}">Time</th>
+          <th class="metric-col metric-col-leg" data-hidden-by-default="{{ 'true' if group.hidden_by_default else 'false' }}">{{ group.leg_label }}</th>
           {% endfor %}
         </tr>
       </thead>
@@ -70,7 +76,7 @@
             </div>
           </th>
           {% for cell in row.display_cells %}
-          <td class="value-cell" data-kind="{{ cell.kind }}">
+          <td class="value-cell" data-kind="{{ cell.kind }}" data-hidden-by-default="{{ 'true' if cell.hidden_by_default else 'false' }}">
             <div class="value">{{ cell.value or '—' }}</div>
             {% if cell.delta %}
             <div class="delta" data-sign="{% if cell.delta.startswith('+') %}positive{% elif cell.delta.startswith('-') %}negative{% endif %}">{{ cell.delta }}</div>
@@ -89,7 +95,9 @@
       selectedCourse: {{ grid.selected_course|tojson }},
       columns: {{ grid.columns|map(attribute='segment_id')|list|tojson }},
       columnLabels: {{ grid.columns|map(attribute='label')|list|tojson }},
+      columnHiddenByDefault: {{ grid.columns|map(attribute='hidden_by_default')|list|tojson }},
       columnGroups: {{ grid.column_groups|tojson }},
+      hasHiddenColumns: {{ grid.has_hidden_columns|tojson }},
       initialRows: {{ grid.rows|tojson }}
     };
   </script>

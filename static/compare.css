@@ -55,6 +55,18 @@ h1 { margin: 0.25rem 0; font-size: 1.6rem; }
   padding: 1rem;
 }
 
+.hidden-splits-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hidden-splits-toggle input {
+  margin: 0;
+}
+
 input, select, button {
   font: inherit;
   padding: 0.55rem 0.75rem;
@@ -140,6 +152,25 @@ button {
   padding-top: 0.35rem;
   padding-bottom: 0.45rem;
   text-align: center;
+}
+
+.compare-grid [data-hidden-by-default="true"] {
+  display: none;
+}
+
+.compare-grid.show-hidden-splits [data-hidden-by-default="true"] {
+  display: table-cell;
+}
+
+.compare-grid.show-hidden-splits thead [data-hidden-by-default="true"] {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.compare-grid.show-hidden-splits tbody .value-cell[data-hidden-by-default="true"] .value {
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 500;
 }
 
 .athlete-col {

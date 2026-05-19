@@ -10,7 +10,10 @@
   const searchInput = document.getElementById("search");
   const searchResults = document.getElementById("search-results");
   const addForm = document.getElementById("add-athlete-form");
+  const hiddenSplitsToggle = document.getElementById("toggle-hidden-splits");
+  const compareGrid = document.getElementById("compare-grid");
   const columnGroups = config.columnGroups || [];
+  const columnHiddenByDefault = config.columnHiddenByDefault || [];
 
   function formatDelta(seconds) {
     if (seconds == null) return "—";
@@ -39,6 +42,7 @@
         seconds: cell.clock_seconds,
         delta: isBaseline ? null : cell.clock_delta,
         delta_seconds: isBaseline ? null : cell.clock_delta_seconds,
+        hidden_by_default: Boolean(cell.hidden_by_default),
       });
       displayCells.push({
         kind: "leg",
@@ -46,6 +50,7 @@
         seconds: cell.leg_seconds,
         delta: isBaseline ? null : cell.leg_delta,
         delta_seconds: isBaseline ? null : cell.leg_delta_seconds,
+        hidden_by_default: Boolean(cell.hidden_by_default),
       });
     });
     return displayCells;
@@ -91,7 +96,7 @@
       ? `<div class="delta" data-sign="${deltaSign(cell.delta)}">${cell.delta}</div>`
       : "";
     return `
-      <td class="value-cell" data-kind="${cell.kind}">
+      <td class="value-cell" data-kind="${cell.kind}" data-hidden-by-default="${cell.hidden_by_default ? "true" : "false"}">
         <div class="value">${cell.value || "—"}</div>
         ${deltaHtml}
       </td>`;
@@ -174,14 +179,16 @@
         return { segmentId, label };
       })
       .filter(({ segmentId, label }) => !isStartSegment(segmentId, label))
-      .map(({ segmentId }) => {
+      .map(({ segmentId }, index) => {
         const split = byId[segmentId];
+        const hiddenByDefault = Boolean(columnHiddenByDefault[index]);
         if (!split) {
           return {
             clock_time: null,
             leg_time: null,
             clock_seconds: null,
             leg_seconds: null,
+            hidden_by_default: hiddenByDefault,
           };
         }
         return {
@@ -189,8 +196,18 @@
           leg_time: split.leg_time,
           clock_seconds: split.clock_seconds,
           leg_seconds: split.leg_seconds,
+          hidden_by_default: hiddenByDefault,
         };
       });
+  }
+
+  function bindHiddenSplitToggle() {
+    if (!hiddenSplitsToggle || !compareGrid) return;
+    const syncVisibility = () => {
+      compareGrid.classList.toggle("show-hidden-splits", hiddenSplitsToggle.checked);
+    };
+    hiddenSplitsToggle.addEventListener("change", syncVisibility);
+    syncVisibility();
   }
 
   async function addAthlete(profileId) {
@@ -248,12 +265,14 @@
 
   rows = rows.map((row) => ({
     ...row,
-    cells: row.cells.map((cell) => ({
+    cells: row.cells.map((cell, index) => ({
       ...cell,
       clock_seconds: cell.clock_seconds ?? null,
       leg_seconds: cell.leg_seconds ?? null,
+      hidden_by_default: Boolean(cell.hidden_by_default ?? columnHiddenByDefault[index]),
     })),
   }));
 
   bindDragAndDrop();
+  bindHiddenSplitToggle();
 })();
