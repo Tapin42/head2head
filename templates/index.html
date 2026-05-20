@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Head2Head — RTRT split comparison</title>
+  <title>Head2Head — split comparison</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='compare.css') }}">
 </head>
 <body>
   <main class="page">
     <h1>Head2Head</h1>
-    <p class="lead">Paste an RTRT.me share link to compare athlete splits side-by-side.</p>
+    <p class="lead">Paste an RTRT.me or Sportstats share link to compare athlete splits side-by-side.</p>
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}
     <form method="post" action="{{ url_for('import_ulink') }}" class="import-form">
       <label for="ulink">Share link</label>
-      <input id="ulink" name="ulink" type="url" required placeholder="https://rtrt.me/ulink/.../tracker/.../focus">
+      <input id="ulink" name="ulink" type="url" required placeholder="https://rtrt.me/ulink/... or https://sportstats.one/event/.../leaderboard/...">
       <button type="submit">Compare</button>
     </form>
   </main>

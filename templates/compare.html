@@ -18,7 +18,9 @@
     {% if grid.available_courses|length > 1 %}
     <form method="get" action="{{ url_for('compare') }}" class="course-picker" id="course-form">
       <input type="hidden" name="pids" value="{{ request.args.get('pids', '') }}">
-      <input type="hidden" name="appid" value="{{ app_id }}">
+      {% if app_id %}<input type="hidden" name="appid" value="{{ app_id }}">{% endif %}
+      {% if sportstats_rid %}<input type="hidden" name="rid" value="{{ sportstats_rid }}">{% endif %}
+      {% if sportstats_slug %}<input type="hidden" name="slug" value="{{ sportstats_slug }}">{% endif %}
       <label for="course">Race</label>
       <select id="course" name="course" onchange="this.form.submit()">
         {% for course in grid.available_courses %}
@@ -30,6 +32,10 @@
     </form>
     {% endif %}
   </header>
+
+  {% if empty_grid %}
+  <p class="lead empty-grid-hint">Add your first athlete to set the baseline row.</p>
+  {% endif %}
 
   <section class="controls">
     <form id="add-athlete-form" class="add-athlete-form">
@@ -92,6 +98,8 @@
   <script>
     window.HEAD2HEAD = {
       appId: {{ app_id|tojson }},
+      sportstatsRid: {{ sportstats_rid|tojson }},
+      sportstatsSlug: {{ sportstats_slug|tojson }},
       selectedCourse: {{ grid.selected_course|tojson }},
       columns: {{ grid.columns|map(attribute='segment_id')|list|tojson }},
       columnLabels: {{ grid.columns|map(attribute='label')|list|tojson }},

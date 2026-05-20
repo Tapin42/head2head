@@ -128,10 +128,13 @@
   }
 
   function syncUrl() {
-    const params = new URLSearchParams(window.location.search);
-    params.set("pids", rows.map((row) => row.athlete.profile_id).join(","));
+    const params = new URLSearchParams();
+    const pids = rows.map((row) => row.athlete.profile_id).join(",");
+    if (pids) params.set("pids", pids);
     if (config.selectedCourse) params.set("course", config.selectedCourse);
     if (config.appId) params.set("appid", config.appId);
+    if (config.sportstatsRid) params.set("rid", config.sportstatsRid);
+    if (config.sportstatsSlug) params.set("slug", config.sportstatsSlug);
     const next = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, "", next);
   }
@@ -159,8 +162,11 @@
   }
 
   async function fetchAthlete(profileId) {
-    const params = new URLSearchParams({ pid: profileId, appid: config.appId || "" });
+    const params = new URLSearchParams({ pid: profileId });
+    if (config.appId) params.set("appid", config.appId);
     if (config.selectedCourse) params.set("course", config.selectedCourse);
+    if (config.sportstatsRid) params.set("rid", config.sportstatsRid);
+    if (config.sportstatsSlug) params.set("slug", config.sportstatsSlug);
     const response = await fetch(`/api/athlete?${params.toString()}`);
     if (!response.ok) throw new Error("Could not load athlete");
     return response.json();
@@ -222,7 +228,10 @@
   }
 
   async function searchAthletes(query) {
-    const params = new URLSearchParams({ q: query, appid: config.appId || "" });
+    const params = new URLSearchParams({ q: query });
+    if (config.appId) params.set("appid", config.appId);
+    if (config.sportstatsRid) params.set("rid", config.sportstatsRid);
+    if (config.sportstatsSlug) params.set("slug", config.sportstatsSlug);
     const response = await fetch(`/api/search?${params.toString()}`);
     if (!response.ok) return [];
     const payload = await response.json();
