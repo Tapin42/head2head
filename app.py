@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
+import re
 from urllib.parse import urlencode
 
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 
 from racedata.core.models import AthleteRef, Race
 from racedata.core.split_filter import main_point_names_from_conf
@@ -17,6 +18,8 @@ from src.view_models import build_grid_view
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-head2head-secret")
+
+_URL_IN_TEXT_RE = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
 
 
 def _session_credentials(app_id: str) -> SessionCredentials:
@@ -215,17 +218,17 @@ def _course_options(provider: RtrtProvider, race: Race, seed_pid: str | None) ->
     return options, None
 
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+def _extract_share_link(raw: str) -> str:
+    raw = raw.strip()
+    if not raw:
+        return ""
+    if raw.startswith(("http://", "https://")):
+        return raw
+    match = _URL_IN_TEXT_RE.search(raw)
+    return match.group(0) if match else raw
 
 
-@app.route("/import", methods=["POST"])
-def import_ulink():
-    ulink = (request.form.get("ulink") or "").strip()
-    if not ulink:
-        return render_template("index.html", error="Please paste a share link."), 400
-
+def _import_and_redirect(ulink: str):
     try:
         resolution = resolve_share_url(ulink)
     except ValueError as exc:
@@ -276,6 +279,46 @@ def import_ulink():
     if profile and profile.name:
         session["seed_name"] = profile.name
     return redirect(f"/compare?{urlencode(params)}")
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/share", methods=["GET"])
+def share_import():
+    raw_url = (request.args.get("url") or "").strip()
+    raw_text = (request.args.get("text") or "").strip()
+    ulink = _extract_share_link(raw_url or raw_text)
+    if not ulink:
+        return render_template("index.html", error="No share link found."), 400
+    return _import_and_redirect(ulink)
+
+
+@app.route("/import", methods=["POST"])
+def import_ulink():
+    ulink = (request.form.get("ulink") or "").strip()
+    if not ulink:
+        return render_template("index.html", error="Please paste a share link."), 400
+    return _import_and_redirect(ulink)
+
+
+@app.route("/manifest.webmanifest")
+def manifest():
+    return send_from_directory(
+        app.static_folder,
+        "manifest.webmanifest",
+        mimetype="application/manifest+json",
+    )
+
+
+@app.route("/sw.js")
+def service_worker():
+    response = send_from_directory(app.static_folder, "sw.js", mimetype="application/javascript")
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 @app.route("/compare")

@@ -38,6 +38,14 @@ Set `SECRET_KEY` in Fly secrets for production sessions.
 4. Drag rows to change the baseline athlete.
 5. Share the URL — `pids` order determines row order (`pids[0]` = baseline).
 
+## Share from other apps (Android)
+
+1. Open Head2Head in **Chrome**.
+2. Tap **Install** when the banner appears (or Chrome menu → **Install app**).
+3. In RTRT or Sportstats, tap **Share** on a race link and choose **Head2Head**.
+
+Works after the one-time install. No Play Store needed.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE).

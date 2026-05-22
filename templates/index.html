@@ -3,13 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2a385d">
   <title>Head2Head — split comparison</title>
+  <link rel="manifest" href="{{ url_for('manifest') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='compare.css') }}">
 </head>
 <body>
   <main class="page">
     <h1>Head2Head</h1>
     <p class="lead">Paste an RTRT.me or Sportstats share link to compare athlete splits side-by-side.</p>
+    <details class="install-help">
+      <summary>Share from other apps (Android)</summary>
+      <ol>
+        <li>Open Head2Head in <strong>Chrome</strong>.</li>
+        <li>Tap <strong>Install</strong> when the banner appears (or Chrome menu → <strong>Install app</strong>).</li>
+        <li>In RTRT or Sportstats, tap <strong>Share</strong> on a race link and choose <strong>Head2Head</strong>.</li>
+      </ol>
+    </details>
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}
@@ -19,5 +29,11 @@
       <button type="submit">Compare</button>
     </form>
   </main>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("{{ url_for('service_worker') }}", { scope: "/" });
+    }
+  </script>
+  <script src="{{ url_for('static', filename='install-prompt.js') }}"></script>
 </body>
 </html>

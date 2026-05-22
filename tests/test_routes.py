@@ -62,6 +62,122 @@ def test_import_redirects_to_compare_with_seed_pid(monkeypatch):
     assert "appid=app123" in response.headers["Location"]
 
 
+def test_share_redirects_to_compare_with_seed_pid(monkeypatch):
+    client = app_module.app.test_client()
+
+    def fake_resolve(url, **kwargs):
+        return ShareResolution(
+            provider="rtrt",
+            race=Race(
+                event_key="EVENT-2026",
+                display_name="EVENT-2026",
+                provider="rtrt",
+                app_id="app123",
+            ),
+            seed_profile_id="PIDSEED",
+            credentials=SessionCredentials(app_id="app123", token="TOKEN"),
+        )
+
+    monkeypatch.setattr(app_module, "resolve_share_url", fake_resolve)
+    monkeypatch.setattr(app_module, "provider_for_race", lambda *_args, **_kwargs: FakeProvider())
+
+    response = client.get(
+        "/share?url=https://rtrt.me/ulink/X/EVENT-2026/tracker/PIDSEED/focus"
+    )
+    assert response.status_code == 302
+    assert "pids=PIDSEED" in response.headers["Location"]
+    assert "appid=app123" in response.headers["Location"]
+
+
+def test_share_extracts_url_from_text_param(monkeypatch):
+    client = app_module.app.test_client()
+    captured: list[str] = []
+
+    def fake_resolve(url, **kwargs):
+        captured.append(url)
+        return ShareResolution(
+            provider="rtrt",
+            race=Race(
+                event_key="EVENT-2026",
+                display_name="EVENT-2026",
+                provider="rtrt",
+                app_id="app123",
+            ),
+            seed_profile_id="PIDSEED",
+            credentials=SessionCredentials(app_id="app123", token="TOKEN"),
+        )
+
+    monkeypatch.setattr(app_module, "resolve_share_url", fake_resolve)
+    monkeypatch.setattr(app_module, "provider_for_race", lambda *_args, **_kwargs: FakeProvider())
+
+    response = client.get(
+        "/share?text=Check%20out%20https://rtrt.me/ulink/X/EVENT-2026/tracker/PIDSEED/focus"
+    )
+    assert response.status_code == 302
+    assert captured == ["https://rtrt.me/ulink/X/EVENT-2026/tracker/PIDSEED/focus"]
+
+
+def test_share_missing_link_returns_error():
+    client = app_module.app.test_client()
+    response = client.get("/share")
+    assert response.status_code == 400
+    assert b"No share link found" in response.data
+
+
+def test_share_invalid_link_returns_error(monkeypatch):
+    client = app_module.app.test_client()
+
+    def fake_resolve(url, **kwargs):
+        raise ValueError("Unsupported share link.")
+
+    monkeypatch.setattr(app_module, "resolve_share_url", fake_resolve)
+
+    response = client.get("/share?url=https://example.com/not-a-race-link")
+    assert response.status_code == 400
+    assert b"Unsupported share link" in response.data
+
+
+def test_share_sportstats_with_focus_preseeds(monkeypatch):
+    client = app_module.app.test_client()
+
+    def fake_resolve(url, **kwargs):
+        return ShareResolution(
+            provider="sportstats",
+            race=Race(event_key="146818", display_name="Duathlon", provider="sportstats"),
+            seed_profile_id="486",
+            checkpoint_cols=(),
+            slug="usat-multisport",
+        )
+
+    monkeypatch.setattr(app_module, "resolve_share_url", fake_resolve)
+    monkeypatch.setattr(app_module, "provider_for_race", lambda *_args, **_kwargs: FakeProvider())
+
+    response = client.get(
+        "/share?url=https://sportstats.one/event/usat-multisport/leaderboard/146818?focus=486&type=pid"
+    )
+    assert response.status_code == 302
+    location = response.headers["Location"]
+    assert "pids=486" in location
+    assert "rid=146818" in location
+    assert "slug=usat-multisport" in location
+
+
+def test_manifest_served_with_correct_type():
+    client = app_module.app.test_client()
+    response = client.get("/manifest.webmanifest")
+    assert response.status_code == 200
+    assert response.content_type.startswith("application/manifest+json")
+    assert b"share_target" in response.data
+
+
+def test_service_worker_served_with_scope_header():
+    client = app_module.app.test_client()
+    response = client.get("/sw.js")
+    assert response.status_code == 200
+    assert response.content_type.startswith("application/javascript")
+    assert response.headers.get("Service-Worker-Allowed") == "/"
+
+
 def test_import_sportstats_without_focus_redirects_empty_compare(monkeypatch):
     client = app_module.app.test_client()
 

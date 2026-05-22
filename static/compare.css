@@ -84,6 +84,50 @@ button {
 
 .error { color: var(--positive); }
 
+.install-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #eef2ff;
+  border-bottom: 1px solid var(--border);
+}
+
+.install-banner-text {
+  margin: 0;
+  flex: 1 1 200px;
+  font-size: 0.95rem;
+}
+
+.install-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.install-banner-dismiss {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.install-help {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.install-help summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.install-help ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
 .compare-grid {
   width: max-content;
   min-width: 100%;

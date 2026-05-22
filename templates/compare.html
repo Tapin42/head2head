@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2a385d">
   <title>{{ grid.race_title }} — Head2Head</title>
+  <link rel="manifest" href="{{ url_for('manifest') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='compare.css') }}">
 </head>
 <body>
@@ -110,5 +112,11 @@
     };
   </script>
   <script src="{{ url_for('static', filename='compare.js') }}"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("{{ url_for('service_worker') }}", { scope: "/" });
+    }
+  </script>
+  <script src="{{ url_for('static', filename='install-prompt.js') }}"></script>
 </body>
 </html>
