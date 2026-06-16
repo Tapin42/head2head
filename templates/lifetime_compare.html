@@ -39,36 +39,58 @@
 
   {% if view.rows %}
   <div class="table-wrap">
-    <table class="lifetime-table">
+    <table class="lifetime-table" id="lifetime-table">
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Event</th>
-          <th>Race</th>
-          <th>{{ view.athlete_a.display_name }}</th>
-          <th>{{ view.athlete_b.display_name }}</th>
-          <th>Δ time</th>
+          <th class="athlete-side-header athlete-a-header">{{ view.athlete_a.display_name }}</th>
+          <th class="race-metric sortable" data-sort-key="date" aria-sort="descending">Date</th>
+          <th class="race-metric sortable" data-sort-key="event">Event</th>
+          <th class="race-metric sortable" data-sort-key="race">Race</th>
+          <th class="athlete-side-header athlete-b-header">{{ view.athlete_b.display_name }}</th>
         </tr>
       </thead>
       <tbody>
         {% for row in view.rows %}
-        <tr>
-          <td>{{ row.race_date }}</td>
-          <td>
+        <tr data-date="{{ row.date_sort }}" data-event="{{ row.event_name|lower }}" data-race="{{ row.race_name|lower }}">
+          <td class="athlete-stack athlete-a-stack">
+            <div class="result-line time-line">
+              <span class="result-value finish-time{% if row.winner_a %} winner{% elif row.loser_delta_a %} loser{% endif %}">{{ row.athlete_a.finish_time }}</span>
+              {% if row.loser_delta_a %}
+              <span class="delta" data-sign="positive">{{ row.loser_delta_a }}</span>
+              {% endif %}
+            </div>
+            <hr class="stack-divider">
+            <div class="result-line">
+              <span class="result-label">#</span>
+              <span class="result-value">{{ row.athlete_a.position or '—' }}</span>
+            </div>
+            <hr class="stack-divider">
+            <div class="result-line">
+              <span class="result-value">{{ row.athlete_a.ranking or '—' }}</span>
+            </div>
+          </td>
+          <td class="race-cell race-date-cell">{{ row.race_date }}</td>
+          <td class="race-cell race-event-cell">
             <a href="{{ row.race_url }}" target="_blank" rel="noopener">{{ row.event_name }}</a>
           </td>
-          <td>{{ row.race_name }}</td>
-          <td class="result-cell">
-            {% if row.athlete_a.position %}{{ row.athlete_a.position }} · {% endif %}
-            {% if row.athlete_a.ranking %}{{ "%.3f"|format(row.athlete_a.ranking) }} · {% endif %}
-            {{ row.athlete_a.finish_time }}
+          <td class="race-cell race-name-cell">{{ row.race_name }}</td>
+          <td class="athlete-stack athlete-b-stack">
+            <div class="result-line time-line">
+              <span class="result-value finish-time{% if row.winner_b %} winner{% elif row.loser_delta_b %} loser{% endif %}">{{ row.athlete_b.finish_time }}</span>
+              {% if row.loser_delta_b %}
+              <span class="delta" data-sign="positive">{{ row.loser_delta_b }}</span>
+              {% endif %}
+            </div>
+            <hr class="stack-divider">
+            <div class="result-line">
+              <span class="result-label">#</span>
+              <span class="result-value">{{ row.athlete_b.position or '—' }}</span>
+            </div>
+            <hr class="stack-divider">
+            <div class="result-line">
+              <span class="result-value">{{ row.athlete_b.ranking or '—' }}</span>
+            </div>
           </td>
-          <td class="result-cell">
-            {% if row.athlete_b.position %}{{ row.athlete_b.position }} · {% endif %}
-            {% if row.athlete_b.ranking %}{{ "%.3f"|format(row.athlete_b.ranking) }} · {% endif %}
-            {{ row.athlete_b.finish_time }}
-          </td>
-          <td class="delta-cell">{{ row.time_delta }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -77,5 +99,7 @@
   {% else %}
   <p class="lead empty-grid-hint">No shared races found between these two athletes.</p>
   {% endif %}
+
+  <script src="{{ url_for('static', filename='lifetime_compare.js') }}"></script>
 </body>
 </html>

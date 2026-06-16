@@ -425,19 +425,139 @@ button {
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  table-layout: fixed;
 }
 
 .lifetime-table th,
 .lifetime-table td {
   padding: 0.65rem 0.75rem;
   border-bottom: 1px solid var(--border);
-  text-align: left;
   vertical-align: top;
 }
 
 .lifetime-table th {
   background: var(--bg);
   font-size: 0.85rem;
+}
+
+.athlete-side-header {
+  font-weight: 600;
+  width: 11rem;
+}
+
+.athlete-a-header,
+.athlete-a-stack {
+  text-align: right;
+}
+
+.athlete-b-header,
+.athlete-b-stack {
+  text-align: left;
+}
+
+.race-metric,
+.race-date-cell {
+  text-align: center;
+  width: 7.5rem;
+  white-space: nowrap;
+}
+
+.race-event-cell,
+.race-name-cell {
+  text-align: left;
+}
+
+.athlete-stack {
+  font-variant-numeric: tabular-nums;
+  vertical-align: top;
+}
+
+.result-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  line-height: 1.35;
+}
+
+.athlete-a-stack .result-line {
+  justify-content: flex-end;
+}
+
+.athlete-b-stack .result-line {
+  justify-content: flex-start;
+}
+
+.result-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.result-value {
+  font-weight: 600;
+}
+
+.stack-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.45rem 0;
+}
+
+.time-line {
+  flex-wrap: wrap;
+}
+
+.time-line .delta {
+  display: none;
+}
+
+.lifetime-table .finish-time.winner {
+  color: var(--negative);
+}
+
+.lifetime-table .finish-time.loser {
+  color: var(--positive);
+}
+
+.lifetime-table .delta[data-sign="positive"] {
+  color: var(--positive);
+}
+
+.lifetime-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.lifetime-table th.sortable:hover {
+  color: var(--text);
+}
+
+.lifetime-table th.sortable::after {
+  content: "↕";
+  margin-left: 0.25rem;
+  font-size: 0.65rem;
+  opacity: 0.35;
+}
+
+.lifetime-table th.sortable.sort-active::after {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.lifetime-table th.sortable.sort-active[aria-sort="ascending"]::after {
+  content: "↑";
+}
+
+.lifetime-table th.sortable.sort-active[aria-sort="descending"]::after {
+  content: "↓";
+}
+
+.lifetime-table .finish-time {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .lifetime-table tbody tr:last-child td {
@@ -451,11 +571,6 @@ button {
 
 .lifetime-table a:hover {
   text-decoration: underline;
-}
-
-.result-cell, .delta-cell {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .search-result-btn {

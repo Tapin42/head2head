@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 from urllib.parse import urlencode
@@ -497,6 +498,22 @@ def lifetime_compare():
     results_b = provider.fetch_all_results(athlete_b_id)
     matches = find_common_races(results_a, results_b)
     view = build_lifetime_compare_view(profile_a, profile_b, matches)
+    return render_template("lifetime_compare.html", view=view)
+
+
+_LIFETIME_PREVIEW_CACHE = os.path.join("/tmp", "lifetime_preview_view.json")
+
+
+@app.route("/lifetime/preview")
+def lifetime_compare_preview():
+    try:
+        with open(_LIFETIME_PREVIEW_CACHE, encoding="utf-8") as cache_file:
+            view = json.load(cache_file)
+    except FileNotFoundError:
+        return render_template(
+            "index.html",
+            error="Preview cache missing. Fetch a comparison first while the dev server is running.",
+        ), 404
     return render_template("lifetime_compare.html", view=view)
 
 
