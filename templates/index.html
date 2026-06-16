@@ -26,7 +26,12 @@
           <div class="athlete-slot" data-slot="a">
             <h3>Athlete A</h3>
             <label for="search-a">Search by name</label>
-            <input id="search-a" type="search" autocomplete="off" placeholder="Last name or full name">
+            <div class="search-row">
+              <input id="search-a" type="search" autocomplete="off" placeholder="Last name or full name">
+              <button type="button" class="search-submit-btn" id="search-btn-a">Search</button>
+            </div>
+            <p class="search-hint" id="hint-a">Enter a name, then press Search or Enter.</p>
+            <p class="search-status" id="status-a" hidden aria-live="polite"></p>
             <ul class="search-results" id="results-a" hidden></ul>
             <p class="selected-athlete" id="selected-a" hidden></p>
           </div>
@@ -34,13 +39,20 @@
           <div class="athlete-slot" data-slot="b">
             <h3>Athlete B</h3>
             <label for="search-b">Search by name</label>
-            <input id="search-b" type="search" autocomplete="off" placeholder="Last name or full name">
+            <div class="search-row">
+              <input id="search-b" type="search" autocomplete="off" placeholder="Last name or full name">
+              <button type="button" class="search-submit-btn" id="search-btn-b">Search</button>
+            </div>
+            <p class="search-hint" id="hint-b">Enter a name, then press Search or Enter.</p>
+            <p class="search-status" id="status-b" hidden aria-live="polite"></p>
             <ul class="search-results" id="results-b" hidden></ul>
             <p class="selected-athlete" id="selected-b" hidden></p>
           </div>
         </div>
 
-        <button type="button" id="lifetime-compare-btn" class="compare-btn" disabled>Compare shared races</button>
+        <button type="button" id="lifetime-compare-btn" class="compare-btn" disabled>
+          <span class="btn-label">Compare shared races</span>
+        </button>
       </section>
 
       <section class="mode-card" id="live-section">
