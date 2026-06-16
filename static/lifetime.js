@@ -2,7 +2,8 @@
   const PROVIDER = "usat";
   const SEARCH_URL = "/api/lifetime/search";
   const COMPARE_URL = "/lifetime/compare";
-  const DEBOUNCE_MS = 300;
+  const DEBOUNCE_MS = 500;
+  const MIN_QUERY_LENGTH = 3;
 
   const slots = {
     a: { id: null, profile: null },
@@ -24,6 +25,7 @@
   const compareBtn = document.getElementById("lifetime-compare-btn");
 
   let debounceTimers = { a: null, b: null };
+  let searchControllers = { a: null, b: null };
 
   function formatProfile(profile) {
     const parts = [profile.display_name];
@@ -73,18 +75,36 @@
   }
 
   async function searchAthletes(slot, query) {
-    if (query.length < 2) {
+    if (query.length < MIN_QUERY_LENGTH) {
       clearResults(slot);
       return;
     }
+    if (searchControllers[slot]) {
+      searchControllers[slot].abort();
+    }
+    const controller = new AbortController();
+    searchControllers[slot] = controller;
     const params = new URLSearchParams({ q: query, provider: PROVIDER });
-    const response = await fetch(`${SEARCH_URL}?${params.toString()}`);
-    if (!response.ok) {
+    try {
+      const response = await fetch(`${SEARCH_URL}?${params.toString()}`, {
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      if (!response.ok) {
+        clearResults(slot);
+        return;
+      }
+      const payload = await response.json();
+      if (controller.signal.aborted) return;
+      renderResults(slot, payload.results || []);
+    } catch (error) {
+      if (error.name === "AbortError") return;
       clearResults(slot);
-      return;
+    } finally {
+      if (searchControllers[slot] === controller) {
+        searchControllers[slot] = null;
+      }
     }
-    const payload = await response.json();
-    renderResults(slot, payload.results || []);
   }
 
   function handleSearchInput(slot) {

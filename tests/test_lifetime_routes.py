@@ -73,6 +73,11 @@ class FakeLifetimeProvider:
         )
         return [shared, unique]
 
+    def fetch_profile_and_results(
+        self, athlete_id: str
+    ) -> tuple[LifetimeAthleteProfile | None, list[LifetimeRaceResult]]:
+        return self.fetch_profile(athlete_id), self.fetch_all_results(athlete_id)
+
 
 def test_lifetime_search_returns_disambiguation_fields(monkeypatch):
     monkeypatch.setattr(app_module, "lifetime_provider_for", lambda _provider: FakeLifetimeProvider())
@@ -107,3 +112,39 @@ def test_lifetime_compare_requires_two_athletes():
     client = app_module.app.test_client()
     response = client.get("/lifetime/compare?a=182151&provider=usat")
     assert response.status_code == 400
+
+
+def test_lifetime_search_requires_three_characters(monkeypatch):
+    monkeypatch.setattr(app_module, "lifetime_provider_for", lambda _provider: FakeLifetimeProvider())
+    client = app_module.app.test_client()
+    response = client.get("/api/lifetime/search?q=Na&provider=usat")
+    assert response.status_code == 200
+    assert response.get_json()["results"] == []
+
+
+def test_lifetime_search_returns_429_when_rate_limited(monkeypatch):
+    class RateLimitedProvider(FakeLifetimeProvider):
+        def search_athletes(self, query: str):
+            from racedata.providers.usat.client import UsatRateLimitError
+
+            raise UsatRateLimitError(app_module.USAT_RATE_LIMIT_MESSAGE)
+
+    monkeypatch.setattr(app_module, "lifetime_provider_for", lambda _provider: RateLimitedProvider())
+    client = app_module.app.test_client()
+    response = client.get("/api/lifetime/search?q=Navratil&provider=usat")
+    assert response.status_code == 429
+    assert response.get_json()["error"] == app_module.USAT_RATE_LIMIT_MESSAGE
+
+
+def test_lifetime_compare_returns_429_when_rate_limited(monkeypatch):
+    class RateLimitedProvider(FakeLifetimeProvider):
+        def fetch_profile_and_results(self, athlete_id: str):
+            from racedata.providers.usat.client import UsatRateLimitError
+
+            raise UsatRateLimitError(app_module.USAT_RATE_LIMIT_MESSAGE)
+
+    monkeypatch.setattr(app_module, "lifetime_provider_for", lambda _provider: RateLimitedProvider())
+    client = app_module.app.test_client()
+    response = client.get("/lifetime/compare?a=182151&b=2722919&provider=usat")
+    assert response.status_code == 429
+    assert app_module.USAT_RATE_LIMIT_MESSAGE in response.get_data(as_text=True)

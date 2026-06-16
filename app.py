@@ -16,6 +16,7 @@ from racedata.providers.rtrt.service import RtrtProvider
 from racedata.providers.sportstats.link import CheckpointCol
 from racedata.resolve import ShareResolution, resolve_share_url
 from racedata.lifetime.h2h import find_common_races
+from racedata.providers.usat.client import UsatRateLimitError
 from racedata.providers.usat.service import UsatLifetimeProvider
 from src.lifetime_view import build_lifetime_compare_view
 from src.view_models import build_grid_view
@@ -28,6 +29,8 @@ _URL_IN_TEXT_RE = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
 _LIFETIME_PROVIDERS = {
     "usat": UsatLifetimeProvider,
 }
+
+USAT_RATE_LIMIT_MESSAGE = "USAT is temporarily limiting requests; try again in a minute."
 
 
 def lifetime_provider_for(provider_name: str):
@@ -467,13 +470,16 @@ def compare():
 def api_lifetime_search():
     provider_name = (request.args.get("provider") or "usat").strip().lower()
     query = (request.args.get("q") or "").strip()
-    if len(query) < 2:
+    if len(query) < 3:
         return jsonify({"results": []})
     try:
         provider = lifetime_provider_for(provider_name)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
-    results = provider.search_athletes(query)
+    try:
+        results = provider.search_athletes(query)
+    except UsatRateLimitError:
+        return jsonify({"error": USAT_RATE_LIMIT_MESSAGE}), 429
     return jsonify({"results": [_profile_to_json(profile) for profile in results]})
 
 
@@ -490,12 +496,13 @@ def lifetime_compare():
         provider = lifetime_provider_for(provider_name)
     except ValueError as exc:
         return render_template("index.html", error=str(exc)), 400
-    profile_a = provider.fetch_profile(athlete_a_id)
-    profile_b = provider.fetch_profile(athlete_b_id)
+    try:
+        profile_a, results_a = provider.fetch_profile_and_results(athlete_a_id)
+        profile_b, results_b = provider.fetch_profile_and_results(athlete_b_id)
+    except UsatRateLimitError:
+        return render_template("index.html", error=USAT_RATE_LIMIT_MESSAGE), 429
     if not profile_a or not profile_b:
         return render_template("index.html", error="Could not load one or both athletes."), 404
-    results_a = provider.fetch_all_results(athlete_a_id)
-    results_b = provider.fetch_all_results(athlete_b_id)
     matches = find_common_races(results_a, results_b)
     view = build_lifetime_compare_view(profile_a, profile_b, matches)
     return render_template("lifetime_compare.html", view=view)
