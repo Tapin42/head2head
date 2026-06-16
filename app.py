@@ -14,12 +14,39 @@ from racedata.providers.rtrt.points import event_display_name_from_conf, pointor
 from racedata.providers.rtrt.service import RtrtProvider
 from racedata.providers.sportstats.link import CheckpointCol
 from racedata.resolve import ShareResolution, resolve_share_url
+from racedata.lifetime.h2h import find_common_races
+from racedata.providers.usat.service import UsatLifetimeProvider
+from src.lifetime_view import build_lifetime_compare_view
 from src.view_models import build_grid_view
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-head2head-secret")
 
 _URL_IN_TEXT_RE = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
+
+_LIFETIME_PROVIDERS = {
+    "usat": UsatLifetimeProvider,
+}
+
+
+def lifetime_provider_for(provider_name: str):
+    factory = _LIFETIME_PROVIDERS.get(provider_name)
+    if not factory:
+        raise ValueError(f"Unsupported lifetime provider: {provider_name}")
+    return factory()
+
+
+def _profile_to_json(profile) -> dict:
+    return {
+        "athlete_id": profile.athlete_id,
+        "display_name": profile.display_name,
+        "first_name": profile.first_name,
+        "last_name": profile.last_name,
+        "age": profile.age,
+        "gender": profile.gender,
+        "location": profile.location,
+        "provider": profile.provider,
+    }
 
 
 def _session_credentials(app_id: str) -> SessionCredentials:
@@ -433,6 +460,44 @@ def compare():
         empty_grid=False,
         **_compare_template_extras(is_rtrt=is_rtrt),
     )
+
+
+@app.route("/api/lifetime/search")
+def api_lifetime_search():
+    provider_name = (request.args.get("provider") or "usat").strip().lower()
+    query = (request.args.get("q") or "").strip()
+    if len(query) < 2:
+        return jsonify({"results": []})
+    try:
+        provider = lifetime_provider_for(provider_name)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    results = provider.search_athletes(query)
+    return jsonify({"results": [_profile_to_json(profile) for profile in results]})
+
+
+@app.route("/lifetime/compare")
+def lifetime_compare():
+    provider_name = (request.args.get("provider") or "usat").strip().lower()
+    athlete_a_id = (request.args.get("a") or "").strip()
+    athlete_b_id = (request.args.get("b") or "").strip()
+    if not athlete_a_id or not athlete_b_id:
+        return render_template("index.html", error="Select two athletes to compare."), 400
+    if athlete_a_id == athlete_b_id:
+        return render_template("index.html", error="Choose two different athletes."), 400
+    try:
+        provider = lifetime_provider_for(provider_name)
+    except ValueError as exc:
+        return render_template("index.html", error=str(exc)), 400
+    profile_a = provider.fetch_profile(athlete_a_id)
+    profile_b = provider.fetch_profile(athlete_b_id)
+    if not profile_a or not profile_b:
+        return render_template("index.html", error="Could not load one or both athletes."), 404
+    results_a = provider.fetch_all_results(athlete_a_id)
+    results_b = provider.fetch_all_results(athlete_b_id)
+    matches = find_common_races(results_a, results_b)
+    view = build_lifetime_compare_view(profile_a, profile_b, matches)
+    return render_template("lifetime_compare.html", view=view)
 
 
 @app.route("/api/search")

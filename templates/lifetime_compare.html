@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2a385d">
+  <title>Lifetime head-to-head — Head2Head</title>
+  <link rel="manifest" href="{{ url_for('manifest') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='compare.css') }}">
+</head>
+<body>
+  <header class="page-header">
+    <div>
+      <a href="{{ url_for('index') }}" class="back-link">← New comparison</a>
+      <h1>Lifetime head-to-head</h1>
+      <p class="subtitle">{{ view.match_count }} shared race{% if view.match_count != 1 %}s{% endif %} (USA Triathlon)</p>
+    </div>
+  </header>
+
+  <section class="lifetime-athletes">
+    <div class="lifetime-athlete-card">
+      <h2>{{ view.athlete_a.display_name }}</h2>
+      <p class="athlete-meta">
+        {% if view.athlete_a.age %}Age {{ view.athlete_a.age }}{% endif %}
+        {% if view.athlete_a.gender %} · {{ view.athlete_a.gender }}{% endif %}
+        {% if view.athlete_a.location %} · {{ view.athlete_a.location }}{% endif %}
+      </p>
+    </div>
+    <div class="lifetime-vs">vs</div>
+    <div class="lifetime-athlete-card">
+      <h2>{{ view.athlete_b.display_name }}</h2>
+      <p class="athlete-meta">
+        {% if view.athlete_b.age %}Age {{ view.athlete_b.age }}{% endif %}
+        {% if view.athlete_b.gender %} · {{ view.athlete_b.gender }}{% endif %}
+        {% if view.athlete_b.location %} · {{ view.athlete_b.location }}{% endif %}
+      </p>
+    </div>
+  </section>
+
+  {% if view.rows %}
+  <div class="table-wrap">
+    <table class="lifetime-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Event</th>
+          <th>Race</th>
+          <th>{{ view.athlete_a.display_name }}</th>
+          <th>{{ view.athlete_b.display_name }}</th>
+          <th>Δ time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in view.rows %}
+        <tr>
+          <td>{{ row.race_date }}</td>
+          <td>
+            <a href="{{ row.race_url }}" target="_blank" rel="noopener">{{ row.event_name }}</a>
+          </td>
+          <td>{{ row.race_name }}</td>
+          <td class="result-cell">
+            {% if row.athlete_a.position %}{{ row.athlete_a.position }} · {% endif %}
+            {% if row.athlete_a.ranking %}{{ "%.3f"|format(row.athlete_a.ranking) }} · {% endif %}
+            {{ row.athlete_a.finish_time }}
+          </td>
+          <td class="result-cell">
+            {% if row.athlete_b.position %}{{ row.athlete_b.position }} · {% endif %}
+            {% if row.athlete_b.ranking %}{{ "%.3f"|format(row.athlete_b.ranking) }} · {% endif %}
+            {{ row.athlete_b.finish_time }}
+          </td>
+          <td class="delta-cell">{{ row.time_delta }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="lead empty-grid-hint">No shared races found between these two athletes.</p>
+  {% endif %}
+</body>
+</html>

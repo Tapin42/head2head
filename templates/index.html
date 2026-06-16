@@ -4,30 +4,63 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#2a385d">
-  <title>Head2Head — split comparison</title>
+  <title>Head2Head — race comparison</title>
   <link rel="manifest" href="{{ url_for('manifest') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='compare.css') }}">
 </head>
 <body>
   <main class="page">
     <h1>Head2Head</h1>
-    <p class="lead">Paste an RTRT.me or Sportstats share link to compare athlete splits side-by-side.</p>
-    <details class="install-help">
-      <summary>Share from other apps (Android)</summary>
-      <ol>
-        <li>Open Head2Head in <strong>Chrome</strong>.</li>
-        <li>Tap <strong>Install</strong> when the banner appears (or Chrome menu → <strong>Install app</strong>).</li>
-        <li>In RTRT or Sportstats, tap <strong>Share</strong> on a race link and choose <strong>Head2Head</strong>.</li>
-      </ol>
-    </details>
+    <p class="lead">Compare athletes head-to-head — across a lifetime of races or within a single live event.</p>
+
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}
-    <form method="post" action="{{ url_for('import_ulink') }}" class="import-form">
-      <label for="ulink">Share link</label>
-      <input id="ulink" name="ulink" type="url" required placeholder="https://rtrt.me/ulink/... or https://sportstats.one/event/.../leaderboard/...">
-      <button type="submit">Compare</button>
-    </form>
+
+    <div class="mode-grid">
+      <section class="mode-card" id="lifetime-section">
+        <h2>Lifetime head-to-head</h2>
+        <p class="mode-desc">Search USA Triathlon results for two athletes and see every race they both entered.</p>
+
+        <div class="lifetime-picker">
+          <div class="athlete-slot" data-slot="a">
+            <h3>Athlete A</h3>
+            <label for="search-a">Search by name</label>
+            <input id="search-a" type="search" autocomplete="off" placeholder="Last name or full name">
+            <ul class="search-results" id="results-a" hidden></ul>
+            <p class="selected-athlete" id="selected-a" hidden></p>
+          </div>
+
+          <div class="athlete-slot" data-slot="b">
+            <h3>Athlete B</h3>
+            <label for="search-b">Search by name</label>
+            <input id="search-b" type="search" autocomplete="off" placeholder="Last name or full name">
+            <ul class="search-results" id="results-b" hidden></ul>
+            <p class="selected-athlete" id="selected-b" hidden></p>
+          </div>
+        </div>
+
+        <button type="button" id="lifetime-compare-btn" class="compare-btn" disabled>Compare shared races</button>
+      </section>
+
+      <section class="mode-card" id="live-section">
+        <h2>Live race comparison</h2>
+        <p class="mode-desc">Paste an RTRT.me or Sportstats share link to compare athlete splits side-by-side.</p>
+        <details class="install-help">
+          <summary>Share from other apps (Android)</summary>
+          <ol>
+            <li>Open Head2Head in <strong>Chrome</strong>.</li>
+            <li>Tap <strong>Install</strong> when the banner appears (or Chrome menu → <strong>Install app</strong>).</li>
+            <li>In RTRT or Sportstats, tap <strong>Share</strong> on a race link and choose <strong>Head2Head</strong>.</li>
+          </ol>
+        </details>
+        <form method="post" action="{{ url_for('import_ulink') }}" class="import-form">
+          <label for="ulink">Share link</label>
+          <input id="ulink" name="ulink" type="url" required placeholder="https://rtrt.me/ulink/... or https://sportstats.one/event/.../leaderboard/...">
+          <button type="submit">Compare</button>
+        </form>
+      </section>
+    </div>
   </main>
   <script>
     if ("serviceWorker" in navigator) {
@@ -35,5 +68,6 @@
     }
   </script>
   <script src="{{ url_for('static', filename='install-prompt.js') }}"></script>
+  <script src="{{ url_for('static', filename='lifetime.js') }}"></script>
 </body>
 </html>
