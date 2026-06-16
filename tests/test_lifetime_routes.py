@@ -98,6 +98,9 @@ def test_lifetime_compare_renders_shared_races(monkeypatch):
     assert "Joe Navratil" in html
     assert "Kevin Navratil" in html
     assert "Solo Event" not in html
+    assert "lifetime-table" in html
+    assert "athlete-a-stack" in html
+    assert "sortable" in html
 
 
 def test_lifetime_compare_requires_two_athletes():
