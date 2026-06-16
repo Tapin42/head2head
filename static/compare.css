@@ -320,6 +320,158 @@ button {
 
 .search-results button:last-child { border-bottom: none; }
 
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.mode-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.mode-card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.mode-desc {
+  color: var(--muted);
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.lifetime-picker {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.athlete-slot h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.athlete-slot label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.athlete-slot input[type="search"] {
+  width: 100%;
+}
+
+.selected-athlete {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.compare-btn {
+  width: 100%;
+}
+
+.compare-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lifetime-athletes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.lifetime-athlete-card {
+  flex: 1 1 240px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.lifetime-athlete-card h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.athlete-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.lifetime-vs {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.lifetime-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.lifetime-table th,
+.lifetime-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.lifetime-table th {
+  background: var(--bg);
+  font-size: 0.85rem;
+}
+
+.lifetime-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lifetime-table a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.lifetime-table a:hover {
+  text-decoration: underline;
+}
+
+.result-cell, .delta-cell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.search-result-btn {
+  padding: 0.65rem 0.75rem;
+}
+
+.search-results {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.search-results li {
+  margin: 0;
+}
+
 tr.dragging { opacity: 0.5; }
 
 @media (max-width: 720px) {
