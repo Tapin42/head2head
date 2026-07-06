@@ -90,7 +90,11 @@ def _sportstats_cols_from_session() -> tuple[CheckpointCol, ...]:
     return tuple(cols)
 
 
-def _store_race(race: Race, *, rid: str = "", slug: str = "") -> None:
+def _mtec_event_id_from_session() -> str:
+    return str((session.get("race") or {}).get("event_id") or "")
+
+
+def _store_race(race: Race, *, rid: str = "", slug: str = "", event_id: str = "") -> None:
     payload = {
         "provider": race.provider,
         "event_key": race.event_key,
@@ -101,22 +105,34 @@ def _store_race(race: Race, *, rid: str = "", slug: str = "") -> None:
         payload["rid"] = rid
     if slug:
         payload["slug"] = slug
+    if event_id:
+        payload["event_id"] = event_id
     session["race"] = payload
 
 
 def _store_share_resolution(resolution: ShareResolution) -> None:
-    _store_race(
-        resolution.race,
-        rid=resolution.race.event_key if resolution.race.provider == "sportstats" else "",
-        slug=resolution.slug,
-    )
     if resolution.race.provider == "sportstats":
+        _store_race(
+            resolution.race,
+            rid=resolution.race.event_key,
+            slug=resolution.slug,
+        )
         session["sportstats_cols"] = [
             {"cid": col.cid, "label": col.label, "cho": col.cho, "fc": col.fc}
             for col in resolution.checkpoint_cols
         ]
         if resolution.race_title:
             session["race"]["race_title"] = resolution.race_title
+    elif resolution.race.provider == "mtec":
+        _store_race(
+            resolution.race,
+            slug=resolution.slug,
+            event_id=resolution.event_id,
+        )
+        if resolution.race_title:
+            session["race"]["race_title"] = resolution.race_title
+    else:
+        _store_race(resolution.race)
     if resolution.credentials:
         session["rtrt_credentials"] = {
             "app_id": resolution.credentials.app_id,
@@ -130,6 +146,8 @@ def _provider_for_session() -> RtrtProvider | object:
         raise ValueError("Race context missing")
     if race.provider == "sportstats":
         return provider_for_race(race, sportstats_cols=_sportstats_cols_from_session())
+    if race.provider == "mtec":
+        return provider_for_race(race, mtec_event_id=_mtec_event_id_from_session())
     return provider_for_race(race, rtrt_credentials=_session_credentials(race.app_id))
 
 
@@ -144,6 +162,31 @@ def _sportstats_hidden_segment_ids_from_session() -> set[str]:
 def _sportstats_subtitle_from_session() -> str | None:
     title = (session.get("race") or {}).get("race_title", "")
     return title.strip() or None
+
+
+def _mtec_subtitle_from_session() -> str | None:
+    return _sportstats_subtitle_from_session()
+
+
+def _mtec_leaderboard_url(race_id: str, slug: str) -> str:
+    return f"https://www.mtecresults.com/race/leaderboard/{race_id}/{slug}"
+
+
+def _mtec_params_from_session() -> dict[str, str]:
+    data = session.get("race") or {}
+    if data.get("provider") != "mtec":
+        return {}
+    params: dict[str, str] = {}
+    race_id = data.get("event_key", "")
+    event_id = data.get("event_id", "")
+    slug = data.get("slug", "")
+    if race_id:
+        params["race"] = str(race_id)
+    if event_id:
+        params["event"] = str(event_id)
+    if slug:
+        params["slug"] = slug
+    return params
 
 
 def _sportstats_leaderboard_url(slug: str, rid: str) -> str:
@@ -193,20 +236,71 @@ def _ensure_sportstats_context_from_query() -> bool:
     return True
 
 
+def _ensure_mtec_context_from_query() -> bool:
+    race_id = (request.args.get("race") or "").strip()
+    event_id = (request.args.get("event") or "").strip()
+    slug = (request.args.get("slug") or "").strip()
+    if not race_id or not event_id or not slug:
+        return False
+
+    race_data = session.get("race") or {}
+    needs_refresh = (
+        race_data.get("provider") != "mtec"
+        or str(race_data.get("event_key") or "") != race_id
+        or str(race_data.get("event_id") or "") != event_id
+        or str(race_data.get("slug") or "") != slug
+    )
+    if not needs_refresh:
+        return True
+
+    try:
+        resolution = resolve_share_url(_mtec_leaderboard_url(race_id, slug))
+    except ValueError:
+        return False
+    if resolution.provider != "mtec" or resolution.race.event_key != race_id:
+        return False
+    _store_share_resolution(resolution)
+    return True
+
+
 def _race_from_request() -> Race | None:
     if request.args.get("rid") and request.args.get("slug"):
         if not _ensure_sportstats_context_from_query():
             return None
+    if request.args.get("race") and request.args.get("event") and request.args.get("slug"):
+        if not _ensure_mtec_context_from_query():
+            return None
     return _race_from_session()
 
 
-def _compare_template_extras(*, is_rtrt: bool) -> dict[str, str]:
-    if is_rtrt:
-        return {"sportstats_rid": "", "sportstats_slug": ""}
-    race_data = session.get("race") or {}
-    rid = request.args.get("rid") or race_data.get("rid") or race_data.get("event_key") or ""
-    slug = request.args.get("slug") or race_data.get("slug") or ""
-    return {"sportstats_rid": str(rid), "sportstats_slug": slug}
+def _compare_template_extras(*, race: Race) -> dict[str, str]:
+    if race.provider == "sportstats":
+        race_data = session.get("race") or {}
+        rid = request.args.get("rid") or race_data.get("rid") or race_data.get("event_key") or ""
+        slug = request.args.get("slug") or race_data.get("slug") or ""
+        return {
+            "sportstats_rid": str(rid),
+            "sportstats_slug": slug,
+            "mtec_race_id": "",
+            "mtec_event_id": "",
+            "mtec_slug": "",
+        }
+    if race.provider == "mtec":
+        race_data = session.get("race") or {}
+        return {
+            "sportstats_rid": "",
+            "sportstats_slug": "",
+            "mtec_race_id": str(race_data.get("event_key") or ""),
+            "mtec_event_id": str(race_data.get("event_id") or ""),
+            "mtec_slug": str(race_data.get("slug") or ""),
+        }
+    return {
+        "sportstats_rid": "",
+        "sportstats_slug": "",
+        "mtec_race_id": "",
+        "mtec_event_id": "",
+        "mtec_slug": "",
+    }
 
 
 def _parse_pids() -> list[str]:
@@ -275,6 +369,21 @@ def _import_and_redirect(ulink: str):
                 session["seed_name"] = profile.name
         params: dict[str, str] = {
             "rid": resolution.race.event_key,
+            "slug": resolution.slug,
+        }
+        if resolution.seed_profile_id:
+            params["pids"] = resolution.seed_profile_id
+        return redirect(f"/compare?{urlencode(params)}")
+
+    if resolution.provider == "mtec":
+        if resolution.seed_profile_id:
+            provider = _provider_for_session()
+            profile = provider.fetch_profile(resolution.race, resolution.seed_profile_id)
+            if profile and profile.name:
+                session["seed_name"] = profile.name
+        params = {
+            "race": resolution.race.event_key,
+            "event": resolution.event_id,
             "slug": resolution.slug,
         }
         if resolution.seed_profile_id:
@@ -363,9 +472,14 @@ def compare():
                 "index.html",
                 error="Could not load this Sportstats race. Check the link and try again.",
             ), 400
+        if request.args.get("race") and request.args.get("event"):
+            return render_template(
+                "index.html",
+                error="Could not load this MTEC race. Check the link and try again.",
+            ), 400
         return redirect(url_for("index"))
 
-    is_rtrt = race.provider != "sportstats"
+    is_rtrt = race.provider == "rtrt"
     app_id = request.args.get("appid") or (race.app_id if is_rtrt else "")
 
     if is_rtrt and not app_id:
@@ -383,24 +497,29 @@ def compare():
     provider = _provider_for_session()
 
     if not pids:
+        subtitle = None
+        hidden_segment_ids: set[str] = set()
+        if race.provider == "sportstats":
+            subtitle = _sportstats_subtitle_from_session()
+            hidden_segment_ids = _sportstats_hidden_segment_ids_from_session()
+        elif race.provider == "mtec":
+            subtitle = _mtec_subtitle_from_session()
         grid = build_grid_view(
             race,
             [],
             {},
             baseline_index=0,
-            course_label=_sportstats_subtitle_from_session() if not is_rtrt else None,
+            course_label=subtitle,
             available_courses=[],
             selected_course=None,
-            hidden_segment_ids=_sportstats_hidden_segment_ids_from_session()
-            if not is_rtrt
-            else set(),
+            hidden_segment_ids=hidden_segment_ids,
         )
         return render_template(
             "compare.html",
             grid=grid,
             app_id=app_id,
             empty_grid=True,
-            **_compare_template_extras(is_rtrt=is_rtrt),
+            **_compare_template_extras(race=race),
         )
 
     athletes = _load_athletes(provider, race, pids)
@@ -413,7 +532,10 @@ def compare():
         course_label = labels.get(selected_course, selected_course) if selected_course else None
     else:
         course_options, selected_course = [], None
-        course_label = _sportstats_subtitle_from_session()
+        if race.provider == "sportstats":
+            course_label = _sportstats_subtitle_from_session()
+        else:
+            course_label = _mtec_subtitle_from_session()
 
     splits_by_profile = {
         athlete.profile_id: provider.fetch_splits(
@@ -439,6 +561,13 @@ def compare():
             for split in splits
             if split.segment_id not in main_segment_ids
         }
+    elif race.provider == "sportstats":
+        hidden_segment_ids = {
+            split.segment_id
+            for splits in splits_by_profile.values()
+            for split in splits
+            if split.is_intermediate
+        }
     else:
         hidden_segment_ids = {
             split.segment_id
@@ -462,7 +591,7 @@ def compare():
         grid=grid,
         app_id=app_id,
         empty_grid=False,
-        **_compare_template_extras(is_rtrt=is_rtrt),
+        **_compare_template_extras(race=race),
     )
 
 
@@ -530,7 +659,7 @@ def api_search():
     if not race:
         return jsonify({"error": "Race context missing."}), 400
 
-    is_rtrt = race.provider != "sportstats"
+    is_rtrt = race.provider == "rtrt"
     app_id = request.args.get("appid") or (race.app_id if is_rtrt else "")
     if is_rtrt and not app_id:
         return jsonify({"error": "Race context missing."}), 400
@@ -563,7 +692,7 @@ def api_athlete():
     if not race:
         return jsonify({"error": "Missing parameters."}), 400
 
-    is_rtrt = race.provider != "sportstats"
+    is_rtrt = race.provider == "rtrt"
     app_id = request.args.get("appid") or (race.app_id if is_rtrt else "")
     pid = (request.args.get("pid") or "").strip()
     course = request.args.get("course")

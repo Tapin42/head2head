@@ -23,6 +23,9 @@
       {% if app_id %}<input type="hidden" name="appid" value="{{ app_id }}">{% endif %}
       {% if sportstats_rid %}<input type="hidden" name="rid" value="{{ sportstats_rid }}">{% endif %}
       {% if sportstats_slug %}<input type="hidden" name="slug" value="{{ sportstats_slug }}">{% endif %}
+      {% if mtec_race_id %}<input type="hidden" name="race" value="{{ mtec_race_id }}">{% endif %}
+      {% if mtec_event_id %}<input type="hidden" name="event" value="{{ mtec_event_id }}">{% endif %}
+      {% if mtec_slug %}<input type="hidden" name="slug" value="{{ mtec_slug }}">{% endif %}
       <label for="course">Race</label>
       <select id="course" name="course" onchange="this.form.submit()">
         {% for course in grid.available_courses %}
@@ -102,6 +105,9 @@
       appId: {{ app_id|tojson }},
       sportstatsRid: {{ sportstats_rid|tojson }},
       sportstatsSlug: {{ sportstats_slug|tojson }},
+      mtecRaceId: {{ mtec_race_id|tojson }},
+      mtecEventId: {{ mtec_event_id|tojson }},
+      mtecSlug: {{ mtec_slug|tojson }},
       selectedCourse: {{ grid.selected_course|tojson }},
       columns: {{ grid.columns|map(attribute='segment_id')|list|tojson }},
       columnLabels: {{ grid.columns|map(attribute='label')|list|tojson }},

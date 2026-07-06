@@ -518,3 +518,84 @@ def test_api_athlete_requests_uncollapsed_splits(monkeypatch):
     payload = response.get_json()
     assert [split["segment_id"] for split in payload["splits"]] == ["SWIM", "SWIM-1"]
     assert provider.last_fetch_kwargs["collapse_intermediates"] is False
+
+
+def test_import_mtec_with_focus_preseeds(monkeypatch):
+    client = app_module.app.test_client()
+
+    def fake_resolve(url, **kwargs):
+        return ShareResolution(
+            provider="mtec",
+            race=Race(event_key="19019", display_name="Door County Sprint", provider="mtec"),
+            seed_profile_id="28278143",
+            slug="2025_Door_County_Triathlon-Sprint_-_Individual",
+            event_id="5851",
+            race_title="2025 Door County Triathlon Sprint - Individual",
+        )
+
+    monkeypatch.setattr(app_module, "resolve_share_url", fake_resolve)
+    monkeypatch.setattr(app_module, "provider_for_race", lambda *_args, **_kwargs: FakeProvider())
+
+    response = client.post(
+        "/import",
+        data={
+            "ulink": "https://www.mtecresults.com/runner/show?rid=28278143&race=19019",
+        },
+    )
+    assert response.status_code == 302
+    location = response.headers["Location"]
+    assert "pids=28278143" in location
+    assert "race=19019" in location
+    assert "event=5851" in location
+    assert "slug=2025_Door_County_Triathlon-Sprint_-_Individual" in location
+
+
+def test_compare_mtec_restores_race_from_url_without_session(monkeypatch):
+    resolve_calls: list[str] = []
+
+    def fake_resolve(url, **kwargs):
+        resolve_calls.append(url)
+        return ShareResolution(
+            provider="mtec",
+            race=Race(event_key="19019", display_name="Door County Sprint", provider="mtec"),
+            slug="2025_Door_County_Triathlon-Sprint_-_Individual",
+            event_id="5851",
+            race_title="2025 Door County Triathlon Sprint - Individual",
+        )
+
+    monkeypatch.setattr(app_module, "resolve_share_url", fake_resolve)
+    monkeypatch.setattr(app_module, "provider_for_race", lambda *_args, **_kwargs: FakeProvider())
+
+    client = app_module.app.test_client()
+    response = client.get(
+        "/compare?pids=28278143&race=19019&event=5851&slug=2025_Door_County_Triathlon-Sprint_-_Individual"
+    )
+    assert response.status_code == 200
+    assert len(resolve_calls) == 1
+    assert "mtecresults.com" in resolve_calls[0]
+    with client.session_transaction() as sess:
+        assert sess["race"]["provider"] == "mtec"
+        assert sess["race"]["event_id"] == "5851"
+
+
+def test_provider_receives_mtec_event_id_from_session(monkeypatch):
+    captured: dict = {}
+
+    def capture_provider_for_race(race, **kwargs):
+        captured.update(kwargs)
+        return FakeProvider()
+
+    monkeypatch.setattr(app_module, "provider_for_race", capture_provider_for_race)
+
+    client = app_module.app.test_client()
+    with client.session_transaction() as sess:
+        sess["race"] = {
+            "provider": "mtec",
+            "event_key": "19019",
+            "display_name": "Door County Sprint",
+            "event_id": "5851",
+            "slug": "2025_Door_County_Triathlon-Sprint_-_Individual",
+        }
+
+    client.get("/compare?pids=28278143")
+    assert captured["mtec_event_id"] == "5851"

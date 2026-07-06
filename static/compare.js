@@ -135,6 +135,9 @@
     if (config.appId) params.set("appid", config.appId);
     if (config.sportstatsRid) params.set("rid", config.sportstatsRid);
     if (config.sportstatsSlug) params.set("slug", config.sportstatsSlug);
+    if (config.mtecRaceId) params.set("race", config.mtecRaceId);
+    if (config.mtecEventId) params.set("event", config.mtecEventId);
+    if (config.mtecSlug) params.set("slug", config.mtecSlug);
     const next = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, "", next);
   }
@@ -167,6 +170,9 @@
     if (config.selectedCourse) params.set("course", config.selectedCourse);
     if (config.sportstatsRid) params.set("rid", config.sportstatsRid);
     if (config.sportstatsSlug) params.set("slug", config.sportstatsSlug);
+    if (config.mtecRaceId) params.set("race", config.mtecRaceId);
+    if (config.mtecEventId) params.set("event", config.mtecEventId);
+    if (config.mtecSlug) params.set("slug", config.mtecSlug);
     const response = await fetch(`/api/athlete?${params.toString()}`);
     if (!response.ok) throw new Error("Could not load athlete");
     return response.json();
@@ -232,6 +238,9 @@
     if (config.appId) params.set("appid", config.appId);
     if (config.sportstatsRid) params.set("rid", config.sportstatsRid);
     if (config.sportstatsSlug) params.set("slug", config.sportstatsSlug);
+    if (config.mtecRaceId) params.set("race", config.mtecRaceId);
+    if (config.mtecEventId) params.set("event", config.mtecEventId);
+    if (config.mtecSlug) params.set("slug", config.mtecSlug);
     const response = await fetch(`/api/search?${params.toString()}`);
     if (!response.ok) return [];
     const payload = await response.json();
